@@ -136,7 +136,25 @@ class Llama2PromptStyle(AbstractPromptStyle):
             f"{self.BOS} {self.B_INST} {self.B_SYS} {system_prompt_str.strip()} {self.E_SYS} "
             f"{completion.strip()} {self.E_INST}"
         )
+class Llama3PromptStyle(AbstractPromptStyle):
 
+    def _messages_to_prompt(self, messages: Sequence[ChatMessage]) -> str:
+        prompt = f"<|begin_of_text|>"
+        for message in messages:
+            role = message.role
+            content = message.content or ""
+            if role.lower() == "user":
+                prompt += f"<|start_header_id|>{role.lower()}<|end_header_id|>"
+                prompt += f"{content.strip()}<|eot_id|>"
+        return prompt
+
+    def _completion_to_prompt(self, completion: str) -> str:
+        system_prompt_str = ""
+
+        return (
+            f"<|begin_of_text|> <|start_header_id|> {system_prompt_str.strip()} <|end_header_id|> "
+            f"{completion.strip()} <|end_of_text|>"
+        )
 
 class TagPromptStyle(AbstractPromptStyle):
     """Tag prompt style (used by Vigogne) that uses the prompt style `<|ROLE|>`.
@@ -219,7 +237,7 @@ class ChatMLPromptStyle(AbstractPromptStyle):
 
 
 def get_prompt_style(
-    prompt_style: Literal["default", "llama2", "tag", "mistral", "chatml"] | None
+    prompt_style: Literal["default", "llama2", "llama3", "tag", "mistral", "chatml"] | None
 ) -> AbstractPromptStyle:
     """Get the prompt style to use from the given string.
 
@@ -230,6 +248,8 @@ def get_prompt_style(
         return DefaultPromptStyle()
     elif prompt_style == "llama2":
         return Llama2PromptStyle()
+    elif prompt_style == "llama3":
+        return Llama3PromptStyle()
     elif prompt_style == "tag":
         return TagPromptStyle()
     elif prompt_style == "mistral":
